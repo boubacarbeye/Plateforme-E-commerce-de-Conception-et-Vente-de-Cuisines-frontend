@@ -11,9 +11,7 @@ const MAX_LONGUEUR_CUISINE_CM = 400;
 function App() {
   const [user, setUser]                             = useState(null);
   const [role, setRole]                             = useState(null);
-  // 'configurateur' | 'connexion' | 'inscription'
   const [vueCourante, setVueCourante]               = useState('configurateur');
-
   const [projetId, setProjetId]                     = useState(null);
   const [pieceForme, setPieceForme]                 = useState('lineaire');
   const [modulesPositionnes, setModulesPositionnes] = useState([]);
@@ -99,17 +97,24 @@ function App() {
   // ─── CANVAS ─────────────────────────────────────────────────────────────
 
   const largeurTotale = () => modulesPositionnes.reduce((acc, m) => acc + m.largeur_cm, 0);
-
   const verifierEspace = (larg) => largeurTotale() + larg <= MAX_LONGUEUR_CUISINE_CM;
 
+  // Drop depuis le catalogue (drag & drop)
   const handleDropModule = (mod) => {
     if (!verifierEspace(mod.largeur_cm)) {
       notifier(`Espace maximum (${MAX_LONGUEUR_CUISINE_CM} cm) atteint.`, 'error');
       return;
     }
-    setModulesPositionnes(prev => [...prev, { ...mod, position_x: largeurTotale() }]);
+    setModulesPositionnes(prev => [
+      ...prev,
+      {
+        ...mod,
+        position_x: largeurTotale(),
+      },
+    ]);
   };
 
+  // Ajout via bouton + (clic)
   const handleAjouterViaClic = (module) => {
     const larg = parseInt(module.largeur_cm, 10);
     if (!verifierEspace(larg)) {
@@ -118,7 +123,16 @@ function App() {
     }
     setModulesPositionnes(prev => [
       ...prev,
-      { module_id: module.ModuleProduit_id, nom: module.ModuleProduit_nom, largeur_cm: larg, position_x: largeurTotale(), position_y: 0 },
+      {
+        module_id:  module.ModuleProduit_id,
+        nom:        module.ModuleProduit_nom,
+        largeur_cm: larg,
+        prix_base:  module.prix_base,
+        image_url:  module.image_url || null,
+        categorie:  module.categorie,
+        position_x: largeurTotale(),
+        position_y: 0,
+      },
     ]);
   };
 
@@ -126,6 +140,15 @@ function App() {
     setModulesPositionnes(prev => {
       const copie = [...prev];
       copie[index] = { ...copie[index], ...coords };
+      return copie;
+    });
+  };
+
+  const handleRotaterModule = (index) => {
+    setModulesPositionnes(prev => {
+      const copie = [...prev];
+      const rotation = copie[index].rotation || 0;
+      copie[index] = { ...copie[index], rotation: rotation === 0 ? 90 : 0 };
       return copie;
     });
   };
@@ -185,15 +208,18 @@ function App() {
 
           <div className="flex items-center gap-2 border-l border-slate-800 pl-6">
             {!projetId ? (
-              <button onClick={handleCreerProjet} className="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95">
+              <button onClick={handleCreerProjet}
+                className="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95">
                 Initialiser un Projet
               </button>
             ) : (
               <>
-                <button onClick={handleModifierProjet} className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer">
+                <button onClick={handleModifierProjet}
+                  className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer">
                   Sauvegarder
                 </button>
-                <button onClick={handleSupprimerProjet} className="bg-slate-900 border border-red-900/30 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-red-950/20">
+                <button onClick={handleSupprimerProjet}
+                  className="bg-slate-900 border border-red-900/30 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-red-950/20">
                   Supprimer
                 </button>
               </>
@@ -211,22 +237,26 @@ function App() {
 
         <div className="flex items-center gap-4">
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button onClick={() => setPieceForme('lineaire')} className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'lineaire' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
+            <button onClick={() => setPieceForme('lineaire')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'lineaire' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
               I Linéaire
             </button>
-            <button onClick={() => setPieceForme('en_L')} className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'en_L' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
+            <button onClick={() => setPieceForme('en_L')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'en_L' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
               L En L
             </button>
           </div>
 
           {!user ? (
-            <button onClick={() => setVueCourante('connexion')} className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
+            <button onClick={() => setVueCourante('connexion')}
+              className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
               Espace Client / Pro
             </button>
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-400">{user.prenom} {user.nom}</span>
-              <button onClick={handleLogout} className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
+              <button onClick={handleLogout}
+                className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
                 Déconnexion
               </button>
             </div>
@@ -244,6 +274,7 @@ function App() {
             modulesPositionnes={modulesPositionnes}
             onDropModule={handleDropModule}
             onDeplacerModule={handleDeplacerModule}
+            onRotaterModule={handleRotaterModule}
           />
         </main>
       </div>

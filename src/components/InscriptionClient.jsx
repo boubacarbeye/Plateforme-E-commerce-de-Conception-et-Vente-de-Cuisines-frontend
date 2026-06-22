@@ -57,6 +57,7 @@ const InscriptionClient = ({ onInscriptionSuccess, onAnnuler }) => {
             localStorage.setItem('userRole', data.user.role);
             onInscriptionSuccess(data.user, data.user.role);
 
+        // eslint-disable-next-line no-unused-vars
         } catch (err) {
             setErreurGlobale('Impossible de contacter le serveur.');
         } finally {

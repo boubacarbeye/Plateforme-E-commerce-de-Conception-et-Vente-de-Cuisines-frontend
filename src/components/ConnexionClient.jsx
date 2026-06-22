@@ -45,7 +45,7 @@ const ConnexionClient = ({ onLoginSuccess, onAnnuler, onInscription }) => {
 
                 <div className="flex flex-col items-center mb-8">
                     <span className="w-3 h-3 rounded-full bg-emerald-500 mb-3"></span>
-                    <h2 className="text-xl font-bold text-white tracking-wide">Studio Spatial</h2>
+                    <h2 className="text-xl font-bold text-white tracking-wide">Plateforme E-commerce de Conception et Vente de Cuisines</h2>
                     <p className="text-xs text-slate-400 mt-1">Authentification sécurisée</p>
                 </div>
 
