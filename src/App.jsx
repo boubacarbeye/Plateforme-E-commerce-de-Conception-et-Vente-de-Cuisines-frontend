@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import CatalogueModules from './components/CatalogueModules';
-import ConfigurateurCanvas from './components/ConfigurateurCanvas';
 import ConnexionClient from './components/ConnexionClient';
 import InscriptionClient from './components/InscriptionClient';
 import PageAdministrateur from './components/PageAdministrateur';
+import Configurateur3D from './components/Configurateur3D';
 
 const API = 'http://127.0.0.1:8001/api';
 const MAX_LONGUEUR_CUISINE_CM = 400;
@@ -38,8 +38,6 @@ function App() {
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     };
   };
-
-  // ─── CRUD PROJET ────────────────────────────────────────────────────────
 
   const handleCreerProjet = async () => {
     try {
@@ -94,12 +92,9 @@ function App() {
     }
   };
 
-  // ─── CANVAS ─────────────────────────────────────────────────────────────
-
   const largeurTotale = () => modulesPositionnes.reduce((acc, m) => acc + m.largeur_cm, 0);
   const verifierEspace = (larg) => largeurTotale() + larg <= MAX_LONGUEUR_CUISINE_CM;
 
-  // Drop depuis le catalogue (drag & drop)
   const handleDropModule = (mod) => {
     if (!verifierEspace(mod.largeur_cm)) {
       notifier(`Espace maximum (${MAX_LONGUEUR_CUISINE_CM} cm) atteint.`, 'error');
@@ -109,12 +104,11 @@ function App() {
       ...prev,
       {
         ...mod,
-        position_x: largeurTotale(),
+        position_x: mod.position_x !== undefined ? mod.position_x : largeurTotale(),
       },
     ]);
   };
 
-  // Ajout via bouton + (clic)
   const handleAjouterViaClic = (module) => {
     const larg = parseInt(module.largeur_cm, 10);
     if (!verifierEspace(larg)) {
@@ -124,14 +118,16 @@ function App() {
     setModulesPositionnes(prev => [
       ...prev,
       {
-        module_id:  module.ModuleProduit_id,
-        nom:        module.ModuleProduit_nom,
-        largeur_cm: larg,
-        prix_base:  module.prix_base,
-        image_url:  module.image_url || null,
-        categorie:  module.categorie,
-        position_x: largeurTotale(),
-        position_y: 0,
+        module_id:     module.ModuleProduit_id,
+        nom:           module.ModuleProduit_nom,
+        largeur_cm:    larg,
+        prix_base:     module.prix_base,
+        image_url:     module.image_url || null,
+        modele_3d_url: module.modele_3d_url || null, // <-- NOUVEAU
+        categorie:     module.categorie,
+        position_x:    largeurTotale(),
+        position_y:    0,
+        rotation:      0
       },
     ]);
   };
@@ -143,17 +139,6 @@ function App() {
       return copie;
     });
   };
-
-  const handleRotaterModule = (index) => {
-    setModulesPositionnes(prev => {
-      const copie = [...prev];
-      const rotation = copie[index].rotation || 0;
-      copie[index] = { ...copie[index], rotation: rotation === 0 ? 90 : 0 };
-      return copie;
-    });
-  };
-
-  // ─── AUTH ────────────────────────────────────────────────────────────────
 
   const handleLoginSuccess = (userData, userRole) => {
     setUser(userData);
@@ -169,36 +154,12 @@ function App() {
     setModulesPositionnes([]);
   };
 
-  // ─── RENDUS CONDITIONNELS ────────────────────────────────────────────────
-
-  if (user && role === 'admin') {
-    return <PageAdministrateur onDeconnexion={handleLogout} />;
-  }
-
-  if (vueCourante === 'connexion') {
-    return (
-      <ConnexionClient
-        onLoginSuccess={handleLoginSuccess}
-        onAnnuler={() => setVueCourante('configurateur')}
-        onInscription={() => setVueCourante('inscription')}
-      />
-    );
-  }
-
-  if (vueCourante === 'inscription') {
-    return (
-      <InscriptionClient
-        onInscriptionSuccess={handleLoginSuccess}
-        onAnnuler={() => setVueCourante('connexion')}
-      />
-    );
-  }
-
-  // ─── VUE PRINCIPALE ──────────────────────────────────────────────────────
+  if (user && role === 'admin') return <PageAdministrateur onDeconnexion={handleLogout} />;
+  if (vueCourante === 'connexion') return <ConnexionClient onLoginSuccess={handleLoginSuccess} onAnnuler={() => setVueCourante('configurateur')} onInscription={() => setVueCourante('inscription')} />;
+  if (vueCourante === 'inscription') return <InscriptionClient onInscriptionSuccess={handleLoginSuccess} onAnnuler={() => setVueCourante('connexion')} />;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased flex flex-col m-0 p-0 w-full overflow-hidden">
-
       <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-8 py-4 flex items-center justify-between relative z-50">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
@@ -208,26 +169,16 @@ function App() {
 
           <div className="flex items-center gap-2 border-l border-slate-800 pl-6">
             {!projetId ? (
-              <button onClick={handleCreerProjet}
-                className="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95">
-                Initialiser un Projet
-              </button>
+              <button onClick={handleCreerProjet} className="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95">Initialiser un Projet</button>
             ) : (
               <>
-                <button onClick={handleModifierProjet}
-                  className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer">
-                  Sauvegarder
-                </button>
-                <button onClick={handleSupprimerProjet}
-                  className="bg-slate-900 border border-red-900/30 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-red-950/20">
-                  Supprimer
-                </button>
+                <button onClick={handleModifierProjet} className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer">Sauvegarder</button>
+                <button onClick={handleSupprimerProjet} className="bg-slate-900 border border-red-900/30 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-red-950/20">Supprimer</button>
               </>
             )}
           </div>
         </div>
 
-        {/* Toast */}
         {messageErreur && (
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-medium tracking-wide shadow-2xl flex items-center gap-2 z-50">
             <span className={`w-1.5 h-1.5 rounded-full ${messageType === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
@@ -237,28 +188,16 @@ function App() {
 
         <div className="flex items-center gap-4">
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button onClick={() => setPieceForme('lineaire')}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'lineaire' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
-              I Linéaire
-            </button>
-            <button onClick={() => setPieceForme('en_L')}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'en_L' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
-              L En L
-            </button>
+            <button onClick={() => setPieceForme('lineaire')} className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'lineaire' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>I Linéaire</button>
+            <button onClick={() => setPieceForme('en_L')} className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'en_L' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>L En L</button>
           </div>
 
           {!user ? (
-            <button onClick={() => setVueCourante('connexion')}
-              className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
-              Espace Client / Pro
-            </button>
+            <button onClick={() => setVueCourante('connexion')} className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">Espace Client / Pro</button>
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-400">{user.prenom} {user.nom}</span>
-              <button onClick={handleLogout}
-                className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
-                Déconnexion
-              </button>
+              <button onClick={handleLogout} className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">Déconnexion</button>
             </div>
           )}
         </div>
@@ -269,13 +208,7 @@ function App() {
           <CatalogueModules onAjouterViaClic={handleAjouterViaClic} />
         </aside>
         <main className="flex-1 bg-slate-950 p-6">
-          <ConfigurateurCanvas
-            pieceForme={pieceForme}
-            modulesPositionnes={modulesPositionnes}
-            onDropModule={handleDropModule}
-            onDeplacerModule={handleDeplacerModule}
-            onRotaterModule={handleRotaterModule}
-          />
+          <Configurateur3D pieceForme={pieceForme} modulesPositionnes={modulesPositionnes} onDeplacerModule={handleDeplacerModule} onDropModule={handleDropModule} />
         </main>
       </div>
     </div>
