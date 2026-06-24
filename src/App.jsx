@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import CatalogueModules from './components/CatalogueModules';
 import ConfigurateurCanvas from './components/ConfigurateurCanvas';
+import Configurateur3D from './components/Configurateur3D';
 import ConnexionClient from './components/ConnexionClient';
 import InscriptionClient from './components/InscriptionClient';
 import PageAdministrateur from './components/PageAdministrateur';
 
-const API = 'http://127.0.0.1:8001/api';
+const API = 'http://127.0.0.1:8000/api';
 const MAX_LONGUEUR_CUISINE_CM = 400;
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
   const [modulesPositionnes, setModulesPositionnes] = useState([]);
   const [messageErreur, setMessageErreur]           = useState('');
   const [messageType, setMessageType]               = useState('info');
+  const [vue, setVue]                               = useState('2d'); // ← NOUVEAU
 
   useEffect(() => {
     if (messageErreur) {
@@ -99,7 +101,6 @@ function App() {
   const largeurTotale = () => modulesPositionnes.reduce((acc, m) => acc + m.largeur_cm, 0);
   const verifierEspace = (larg) => largeurTotale() + larg <= MAX_LONGUEUR_CUISINE_CM;
 
-  // Drop depuis le catalogue (drag & drop)
   const handleDropModule = (mod) => {
     if (!verifierEspace(mod.largeur_cm)) {
       notifier(`Espace maximum (${MAX_LONGUEUR_CUISINE_CM} cm) atteint.`, 'error');
@@ -107,14 +108,10 @@ function App() {
     }
     setModulesPositionnes(prev => [
       ...prev,
-      {
-        ...mod,
-        position_x: largeurTotale(),
-      },
+      { ...mod, position_x: largeurTotale() },
     ]);
   };
 
-  // Ajout via bouton + (clic)
   const handleAjouterViaClic = (module) => {
     const larg = parseInt(module.largeur_cm, 10);
     if (!verifierEspace(larg)) {
@@ -236,6 +233,19 @@ function App() {
         )}
 
         <div className="flex items-center gap-4">
+
+          {/* ← NOUVEAU : Bouton 2D / 3D */}
+          <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button onClick={() => setVue('2d')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${vue === '2d' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
+              2D
+            </button>
+            <button onClick={() => setVue('3d')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${vue === '3d' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
+              3D
+            </button>
+          </div>
+
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
             <button onClick={() => setPieceForme('lineaire')}
               className={`px-4 py-1.5 text-xs font-semibold rounded-lg cursor-pointer ${pieceForme === 'lineaire' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>
@@ -269,13 +279,21 @@ function App() {
           <CatalogueModules onAjouterViaClic={handleAjouterViaClic} />
         </aside>
         <main className="flex-1 bg-slate-950 p-6">
-          <ConfigurateurCanvas
-            pieceForme={pieceForme}
-            modulesPositionnes={modulesPositionnes}
-            onDropModule={handleDropModule}
-            onDeplacerModule={handleDeplacerModule}
-            onRotaterModule={handleRotaterModule}
-          />
+          {/* ← NOUVEAU : Bascule 2D / 3D */}
+          {vue === '2d' ? (
+            <ConfigurateurCanvas
+              pieceForme={pieceForme}
+              modulesPositionnes={modulesPositionnes}
+              onDropModule={handleDropModule}
+              onDeplacerModule={handleDeplacerModule}
+              onRotaterModule={handleRotaterModule}
+            />
+          ) : (
+            <Configurateur3D
+              pieceForme={pieceForme}
+              modulesPositionnes={modulesPositionnes}
+            />
+          )}
         </main>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API = 'http://127.0.0.1:8001/api';
+const API = 'http://127.0.0.1:8000/api';
 
 const CATEGORIES = {
   meuble_bas:     { label: 'Meuble Bas',      couleur: 'text-blue-400   bg-blue-950/40   border-blue-500/30'   },
@@ -31,7 +31,7 @@ const CatalogueModules = ({ onAjouterViaClic }) => {
   useEffect(() => {
     fetch(`${API}/modules`, { headers: { Accept: 'application/json' } })
       .then(res => { if (!res.ok) throw new Error('Erreur serveur'); return res.json(); })
-      .then(data => { setModules(data.data ?? data); setLoading(false); })
+      .then(data => { setModules(data.modules ?? data.data ?? data); setLoading(false); })
       .catch(err => { setError(err.message); setLoading(false); });
   }, []);
 
